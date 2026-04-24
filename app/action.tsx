@@ -47,15 +47,26 @@ interface ContentResult extends SearchResult {
   html: string;
 }
 // 4. Fetch search results from Brave Search API
+// Brave's free tier allows ~1 request/second - retry on 429 with exponential backoff
+async function braveFetch(url: string, maxRetries = 4): Promise<Response> {
+  const headers = {
+    'Accept': 'application/json',
+    'Accept-Encoding': 'gzip',
+    'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY as string,
+  };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, { headers });
+    if (response.status !== 429) return response;
+    if (attempt === maxRetries - 1) return response;
+    const retryAfter = Number(response.headers.get('retry-after')) * 1000 || 1100 * Math.pow(2, attempt);
+    await new Promise(resolve => setTimeout(resolve, retryAfter));
+  }
+  throw new Error('Brave API: max retries exceeded');
+}
+
 async function getSources(message: string, numberOfPagesToScan = config.numberOfPagesToScan): Promise<SearchResult[]> {
   try {
-    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(message)}&count=${numberOfPagesToScan}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip',
-        "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY as string
-      }
-    });
+    const response = await braveFetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(message)}&count=${numberOfPagesToScan}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -155,14 +166,7 @@ async function processAndVectorizeContent(
 // 7. Fetch image search results from Brave Search API
 async function getImages(message: string): Promise<{ title: string; link: string }[]> {
   try {
-    const response = await fetch(`https://api.search.brave.com/res/v1/images/search?q=${message}&spellcheck=1`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Accept-Encoding": "gzip",
-        "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY as string
-      }
-    });
+    const response = await braveFetch(`https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(message)}&spellcheck=1`);
     if (!response.ok) {
       throw new Error(`Network response was not ok. Status: ${response.status}`);
     }
@@ -275,13 +279,22 @@ async function myAction(userMessage: string): Promise<any> {
   "use server";
   const streamable = createStreamableValue({});
   (async () => {
-    const [images, sources, videos] = await Promise.all([
-      getImages(userMessage),
-      getSources(userMessage),
-      getVideos(userMessage),
-    ]);
+    // Videos (Serper) can run in parallel; Brave endpoints must be sequenced to respect rate limits
+    const videosPromise = getVideos(userMessage).catch((err) => {
+      console.error('getVideos failed:', err);
+      return [] as { imageUrl: string; link: string }[];
+    });
+    const sources = await getSources(userMessage).catch((err) => {
+      console.error('getSources failed:', err);
+      return [] as SearchResult[];
+    });
     streamable.update({ 'searchResults': sources });
+    const images = await getImages(userMessage).catch((err) => {
+      console.error('getImages failed:', err);
+      return [] as { title: string; link: string }[];
+    });
     streamable.update({ 'images': images });
+    const videos = await videosPromise;
     streamable.update({ 'videos': videos });
     const html = await get10BlueLinksContents(sources);
     const vectorResults = await processAndVectorizeContent(html, userMessage);
