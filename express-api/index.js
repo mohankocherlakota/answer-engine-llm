@@ -81,7 +81,8 @@ app.post('/', async (req, res) => {
   // 18. Extract main content from the HTML page
   function extractMainContent(html, link) {
     console.log(`8. Extracting main content from HTML for ${link}`);
-    const $ = html.length ? cheerio.load(html) : null
+    if (!html.length) return '';
+    const $ = cheerio.load(html);
     $("script, style, head, nav, footer, iframe, img").remove();
     return $("body").text().replace(/\s+/g, " ").trim();
   }
@@ -113,7 +114,7 @@ app.post('/', async (req, res) => {
       [{
         role: "system", content: `
         - Here is my query "${message}", respond back with an answer that is as long as possible. If you can't find any relevant results, respond with "No relevant results found." 
-        - ${embedSourcesInLLMResponse ? "Return the sources used in the response with iterable numbered markdown style annotations." : ""}" : ""}`
+        - ${embedSourcesInLLMResponse ? "Return the sources used in the response with iterable numbered markdown style annotations." : ""}`
       },
       { role: "user", content: ` - Here are the top results from a similarity search: ${JSON.stringify(sources)}. ` },
       ], stream: true, model: "mixtral-8x7b-32768"

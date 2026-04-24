@@ -21,16 +21,23 @@ const FollowUpComponent = ({ followUp, handleFollowUpClick }: { followUp: Follow
                 <img src="./groq.png" alt="groq logo" className='w-6 h-6' />
             </div>
             <ul className="mt-2">
-                {followUp.choices[0].message.content && JSON.parse(followUp.choices[0].message.content).followUp.map((question: string, index: number) => (
-                    <li
-                        key={index}
-                        className="flex items-center mt-2 cursor-pointer"
-                        onClick={() => handleQuestionClick(question)}
-                    >
-                        <span role="img" aria-label="link" className="mr-2 dark:text-white text-black">🔗</span>
-                        <p className="dark:text-white text-black hover:underline">{`${question}`}</p>
-                    </li>
-                ))}
+                {(() => {
+                    try {
+                        const parsed = JSON.parse(followUp.choices[0]?.message?.content ?? '{}');
+                        return (parsed.followUp ?? []).map((question: string, index: number) => (
+                            <li
+                                key={index}
+                                className="flex items-center mt-2 cursor-pointer"
+                                onClick={() => handleQuestionClick(question)}
+                            >
+                                <span role="img" aria-label="link" className="mr-2 dark:text-white text-black">🔗</span>
+                                <p className="dark:text-white text-black hover:underline">{`${question}`}</p>
+                            </li>
+                        ));
+                    } catch {
+                        return null;
+                    }
+                })()}
             </ul>
         </div>
     );

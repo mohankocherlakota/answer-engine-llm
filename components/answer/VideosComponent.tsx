@@ -197,9 +197,16 @@ return (
 };
 
 // 20. Define the 'getYouTubeVideoId' function to extract the YouTube video ID from a URL
-const getYouTubeVideoId = (url: string) => {
-    const match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?(?:v\/)?(?:shorts\/)?(?:\S+)/);
-    return match ? match[0].split('/').pop()?.split('=').pop() : '';
+const getYouTubeVideoId = (url: string): string => {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/shorts\/([^&\n?#]+)/,
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match?.[1]) return match[1];
+    }
+    return '';
 };
 
 export default VideosComponent;

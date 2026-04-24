@@ -1,5 +1,6 @@
 // 1. Import dependencies
 import 'server-only';
+import React from 'react';
 import { createAI, createStreamableValue } from 'ai/rsc';
 import { OpenAI } from 'openai';
 import cheerio from 'cheerio';
@@ -131,19 +132,21 @@ async function processAndVectorizeContent(
   numberOfSimilarityResults = config.numberOfSimilarityResults,
 ): Promise<DocumentInterface[]> {
   try {
+    const allResults: DocumentInterface[] = [];
     for (let i = 0; i < contents.length; i++) {
       const content = contents[i];
       if (content.html.length > 0) {
         try {
           const splitText = await new RecursiveCharacterTextSplitter({ chunkSize: textChunkSize, chunkOverlap: textChunkOverlap }).splitText(content.html);
           const vectorStore = await MemoryVectorStore.fromTexts(splitText, { title: content.title, link: content.link }, embeddings);
-          return await vectorStore.similaritySearch(query, numberOfSimilarityResults);
+          const results = await vectorStore.similaritySearch(query, numberOfSimilarityResults);
+          allResults.push(...results);
         } catch (error) {
           console.error(`Error processing content for ${content.link}:`, error);
         }
       }
     }
-    return [];
+    return allResults;
   } catch (error) {
     console.error('Error processing and vectorizing content:', error);
     throw error;
