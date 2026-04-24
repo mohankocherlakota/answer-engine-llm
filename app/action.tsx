@@ -456,15 +456,24 @@ async function myAction(userMessage: string, fileContent?: string): Promise<any>
     if (fileContent) {
       html.unshift({ title: 'Uploaded file', link: '', snippet: '', favicon: '', html: fileContent });
     }
-    const vectorResults = await processAndVectorizeContent(html, userMessage);
+    // Build context directly from Brave snippets + uploaded file (no extra scraping wait)
+    const snippetContext = sources
+      .map((s, i) => `[${i + 1}] ${s.title}\n${s.snippet || ''}\nURL: ${s.link}`)
+      .join('\n\n');
+    const fileSection = fileContent ? `\n\nUploaded file:\n${fileContent.slice(0, 4000)}` : '';
     const chatCompletion = await openai.chat.completions.create({
-      messages:
-        [{
-          role: "system", content: `
-          - Here is my query "${userMessage}", respond back with an answer that is as long as possible. If you can't find any relevant results, respond with "No relevant results found." `
+      messages: [
+        {
+          role: "system",
+          content: `You are a helpful assistant. Answer the user's query using the web search results provided. Be as detailed and comprehensive as possible. If you can't find relevant information, say so.`
         },
-        { role: "user", content: ` - Here are the top results from a similarity search: ${JSON.stringify(vectorResults)}. ` },
-        ], stream: true, model: config.inferenceModel
+        {
+          role: "user",
+          content: `Query: "${userMessage}"\n\nWeb search results:\n${snippetContext}${fileSection}\n\nProvide a detailed answer.`
+        }
+      ],
+      stream: true,
+      model: config.inferenceModel
     });
     for await (const chunk of chatCompletion) {
       if (chunk.choices[0].delta && chunk.choices[0].finish_reason !== "stop") {
