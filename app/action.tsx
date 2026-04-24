@@ -451,16 +451,15 @@ async function myAction(userMessage: string, fileContent?: string): Promise<any>
     streamable.update({ 'images': images });
     const videos = await videosPromise;
     streamable.update({ 'videos': videos });
-    const html = await get10BlueLinksContents(sources);
-    // If the user uploaded a file, prepend its content as an additional source
+    // Build context from Brave snippets (fast - no page scraping needed)
+    // Only scrape pages when a file was uploaded (need full content for RAG)
+    let fileSection = '';
     if (fileContent) {
-      html.unshift({ title: 'Uploaded file', link: '', snippet: '', favicon: '', html: fileContent });
+      fileSection = `\n\nUploaded file:\n${fileContent.slice(0, 4000)}`;
     }
-    // Build context directly from Brave snippets + uploaded file (no extra scraping wait)
     const snippetContext = sources
       .map((s, i) => `[${i + 1}] ${s.title}\n${s.snippet || ''}\nURL: ${s.link}`)
       .join('\n\n');
-    const fileSection = fileContent ? `\n\nUploaded file:\n${fileContent.slice(0, 4000)}` : '';
     const chatCompletion = await openai.chat.completions.create({
       messages: [
         {

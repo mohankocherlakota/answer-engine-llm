@@ -69,6 +69,7 @@ export default function Page() {
   const { formRef, onKeyDown } = useEnterSubmit();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mentionMenuRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentLlmResponse, setCurrentLlmResponse] = useState('');
@@ -82,16 +83,26 @@ export default function Page() {
     await handleUserMessageSubmission(question, undefined);
   }, []);
 
-  // Global "/" shortcut to focus input
+  // Global "/" shortcut to focus input; Escape closes @mention menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setShowMentionMenu(false); return; }
       if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).nodeName)) {
         e.preventDefault();
         inputRef.current?.focus();
       }
     };
+    const handleClick = (e: MouseEvent) => {
+      if (mentionMenuRef.current && !mentionMenuRef.current.contains(e.target as Node)) {
+        setShowMentionMenu(false);
+      }
+    };
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClick);
+    };
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -249,7 +260,7 @@ export default function Page() {
         <div className="mx-auto sm:max-w-2xl sm:px-4">
           {/* @mention tool picker */}
           {showMentionMenu && filteredTools.length > 0 && (
-            <div className="mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
+            <div ref={mentionMenuRef} className="mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
               {filteredTools.map((tool) => (
                 <button
                   key={tool.name}

@@ -1,4 +1,4 @@
-// 1. Import the 'useState' and 'useEffect' hooks from React
+'use client';
 import { useState, useEffect, useRef } from 'react';
 
 // 2. Define the 'Image' interface with a required 'link' property and an optional 'alt' property

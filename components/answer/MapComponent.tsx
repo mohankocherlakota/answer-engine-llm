@@ -27,7 +27,7 @@ const MapComponent = ({ places }: MapComponentProps) => {
 
         const initMap = async () => {
             L = (await import('leaflet')).default;
-            await import('leaflet/dist/leaflet.css' as any);
+            // CSS is loaded globally via app/globals.css @import 'leaflet/dist/leaflet.css'
 
             // Fix leaflet default marker icon paths
             delete (L.Icon.Default.prototype as any)._getIconUrl;

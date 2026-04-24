@@ -3,101 +3,138 @@
 
 ## Project Overview
 
-This project implements an advanced Answer Engine utilizing Large Language Models (LLMs) to generate intelligent and context-aware responses to user queries.
-The LLM Answer Engine is designed to leverage the power of state-of-the-art language models to provide accurate, relevant, and natural-sounding answers to a wide range of questions. This system can be applied in various domains, from educational tools to customer support interfaces.
-
-## Project Description
-
-Welcome to the **LLM Answer Engine** project! This repository provides the code and instructions for building a powerful answer engine leveraging state-of-the-art technologies. The engine is designed to deliver comprehensive responses to user queries, including text, images, videos, and relevant follow-up questions. By integrating cutting-edge tools such as Groq, Mistral AI's Mixtral, Langchain.JS, Brave Search, Serper API, and OpenAI, this project is an excellent resource for developers interested in natural language processing and advanced search functionalities.
+An advanced Answer Engine powered by Groq (Mixtral-8x7b), Brave Search, and Serper — built on Next.js 14 with the Vercel AI SDK. Delivers immediate LLM answers backed by live search results, images, videos, maps, stock charts, Spotify tracks, and shopping results. Supports file upload RAG, @mention tool routing, Upstash rate limiting, and semantic caching.
 
 ![image](https://github.com/user-attachments/assets/6f6d7c39-6890-4d3c-b915-9575fb81110f)
 
+## Features
+
+- **Instant LLM answers** — Groq streams a response immediately after Brave/Serper fetch (no page scraping delay)
+- **Web search** — Brave Search API with automatic 429 retry (exponential backoff)
+- **Images & Videos** — Serper image/video results with accessible modals (Escape to close)
+- **Follow-up questions** — AI-generated follow-up suggestions
+- **@mention tool routing** — type `@` to pick a specialised tool:
+  - `@searchSong <query>` — Spotify track embed via client_credentials OAuth
+  - `@goShopping <query>` — Product cards with star ratings (Serper Shopping API)
+  - `@searchPlaces <query>` — Interactive Leaflet map + place list (Serper Places API)
+  - `@getTickers <ticker>` — Live TradingView chart embed (no API key required)
+- **File upload RAG** — attach `.txt`, `.pdf`, `.js`, `.tsx` files; content is included in LLM context
+- **Rate limiting** — Upstash Redis sliding window (10 req / 10 min per IP), shows modal when exceeded
+- **Semantic cache** — Upstash Vector deduplicates identical/similar queries (optional)
+- **Dark mode** — full dark/light theme support
+- **Copy to clipboard** — one-click copy on LLM responses with toast confirmation
 
 ## Technologies Used
 
-- **Next.js**: A React framework for building server-side rendered and static web applications.
-- **Tailwind CSS**: A utility-first CSS framework for rapid UI development.
-- **Vercel AI SDK**: A library for creating AI-powered streaming text and chat UIs.
-- **Groq & Mixtral**: Technologies for processing and understanding queries.
-- **Langchain.JS**: JavaScript library for text operations, such as splitting and embeddings.
-- **Brave Search**: Privacy-focused search engine for sourcing content and images.
-- **Serper API**: Fetches relevant videos and images based on queries.
-- **OpenAI Embeddings**: Creates vector representations of text chunks.
-- **Cheerio**: HTML parsing library for extracting content from web pages.
-- **Ollama (Optional)**: Supports streaming inference and embeddings.
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Styling | Tailwind CSS |
+| AI streaming | Vercel AI SDK v3 (`ai/rsc`) |
+| LLM | Groq — Mixtral-8x7b-32768 |
+| Embeddings | OpenAI `text-embedding-3-small` |
+| Search | Brave Search API |
+| Media / Places / Shopping | Serper API |
+| Music | Spotify Web API |
+| Stock charts | TradingView widget (`tv.js`) |
+| Maps | Leaflet + OpenStreetMap |
+| Rate limiting | Upstash Redis (`@upstash/ratelimit`) |
+| Semantic cache | Upstash Vector (`@upstash/semantic-cache`) |
+| RAG | LangChain (splitter + MemoryVectorStore) |
+| HTML parsing | Cheerio |
 
 ## Getting Started
-![image](https://github.com/user-attachments/assets/7dc76855-dd63-4d2e-85af-b163beb301e5)
 
 ### Prerequisites
 
-- Node.js and npm installed on your machine.
-- API keys from OpenAI, Groq, Brave Search, and Serper.
+- Node.js 18+ and npm
+- API keys (see table below)
 
-### Obtaining API Keys
+### Required API Keys
 
-- **OpenAI API Key**: [Generate your OpenAI API key](https://platform.openai.com/signup)
-- **Groq API Key**: [Get your Groq API key](https://groq.com/)
-- **Brave Search API Key**: [Obtain your Brave Search API key](https://brave.com/search/)
-- **Serper API Key**: [Get your Serper API key](https://serper.dev/)
+| Key | Where to get it | Required? |
+|---|---|---|
+| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com/signup) | Yes (embeddings) |
+| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com/) | Yes |
+| `BRAVE_SEARCH_API_KEY` | [brave.com/search/api](https://brave.com/search/api/) | Yes |
+| `SERPER_API` | [serper.dev](https://serper.dev/) | Yes |
+| `SPOTIFY_CLIENT_ID` | [developer.spotify.com](https://developer.spotify.com/dashboard) | For `@searchSong` |
+| `SPOTIFY_CLIENT_SECRET` | Same dashboard | For `@searchSong` |
+| `UPSTASH_REDIS_REST_URL` | [console.upstash.com](https://console.upstash.com/) | For rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Same console | For rate limiting |
 
 ### Installation
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/mohankvsnsk/answer-engine-llm.git
+    git clone https://github.com/mohankocherlakota/answer-engine-llm.git
+    cd answer-engine-llm
     ```
 
 2. Install dependencies:
     ```bash
     npm install
     ```
-    or
-    ```bash
-    bun install
-    ```
 
-3. Create a `.env` file in the root of your project and add your API keys:
+3. Create a `.env` file in the root:
     ```plaintext
     OPENAI_API_KEY=your_openai_api_key
     GROQ_API_KEY=your_groq_api_key
     BRAVE_SEARCH_API_KEY=your_brave_search_api_key
     SERPER_API=your_serper_api_key
+
+    # Optional — enables @searchSong tool
+    SPOTIFY_CLIENT_ID=your_spotify_client_id
+    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+
+    # Optional — enables rate limiting and semantic cache
+    UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+    UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
     ```
 
-### Running the Server
+### Feature Flags (`app/config.tsx`)
 
-To start the server, execute:
+```typescript
+useOllamaInference: false,     // use local Ollama instead of Groq
+useOllamaEmbeddings: false,    // use local Ollama embeddings
+useFunctionCalling: true,      // enable @mention tool routing
+useRateLimiting: false,        // requires Upstash Redis env vars
+useSemanticCache: false,       // requires Upstash Redis env vars
+searchProvider: 'brave',       // 'brave' | 'serper' | 'google'
+```
+
+### Running Locally
+
 ```bash
 npm run dev
 ```
-or
-```bash
-bun run dev
-```
-The server will be running on the specified port.
 
+Open [http://localhost:3000](http://localhost:3000).
 
-### Ollama Support (Partially Supported)
+## @mention Tool Usage
 
-Streaming text responses are supported for Ollama. For embeddings and inference, ensure you have the Ollama running model on your local machine and configure it in the settings.
+Type `@` in the chat input to open the tool picker:
 
-## Backend + Node Only Express API
+| Mention | Example | What it does |
+|---|---|---|
+| `@searchSong` | `@searchSong bohemian rhapsody` | Embeds the top Spotify track result |
+| `@goShopping` | `@goShopping standing desk` | Shows product cards with prices and ratings |
+| `@searchPlaces` | `@searchPlaces coffee shops in NYC` | Shows an interactive map with markers |
+| `@getTickers` | `@getTickers AAPL` | Shows a live TradingView stock chart |
 
-For a standalone backend version using Node.js and Express, check the `express-api` directory. Detailed setup and running instructions are available in the `express-api/README.md`.
+## File Upload
+
+Click the paperclip icon next to the input to attach a file (`.txt`, `.pdf`, `.js`, `.tsx`). The file content is passed to the LLM as additional context for your question.
+
+## Backend + Express API
+
+A standalone Node.js/Express API is in the `express-api/` directory. See `express-api/README.md` for setup.
 
 ## License
 
-This project is licensed under the MIT License.
-## Conclusion
-
-The **LLM Answer Engine** represents a significant step forward in leveraging AI and search technologies to create a robust and versatile answer engine. Whether you're a developer looking to integrate advanced NLP capabilities into your application or simply interested in exploring the potential of these technologies, this project offers a comprehensive starting point. We encourage you to experiment with the features, contribute to the development, and provide feedback to help shape the future of this project. 
-
-## Support
-
-I'm the developer of GEN AI Applications. Learning from YouTube and doing a master's degree in AI and ML algorithms. Follow me in GITHUB for more interesting projects and different domains.
+MIT
 
 ## References
-1. Developers Digest. (2024, March 24). Build a Next.JS Answer Engine with Vercel AI SDK, Groq, Mistral, Langchain,  OpenAI, Brave & Serper [Video]. YouTube. https://www.youtube.com/watch?v=kFC-OWw7G8k
-2. Developersdigest. (n.d.). GitHub - developersdigest/llm-answer-engine: Build a Perplexity-Inspired Answer Engine Using Next.js, Groq, Llama-3, Langchain, OpenAI, Upstash, Brave & Serper. GitHub. [https://github.com/developersdigest/llm-answer-engine](GITHUB)
-   
+
+1. Developers Digest — [Build a Next.JS Answer Engine](https://www.youtube.com/watch?v=kFC-OWw7G8k)
+2. [developersdigest/llm-answer-engine](https://github.com/developersdigest/llm-answer-engine) — upstream project
