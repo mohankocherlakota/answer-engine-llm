@@ -1,5 +1,5 @@
-// 1. Import the 'useState' hook from React
-import { useState } from 'react';
+// 1. Import the 'useState' and 'useEffect' hooks from React
+import { useState, useEffect, useRef } from 'react';
 
 // 2. Define the 'Image' interface with a required 'link' property and an optional 'alt' property
 interface Image {
@@ -17,6 +17,15 @@ const ImagesComponent: React.FC<ImagesComponentProps> = ({ images }) => {
     // 5. Use the 'useState' hook to manage the 'showMore' and 'selectedImage' state
     const [showMore, setShowMore] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!selectedImage) return;
+        closeButtonRef.current?.focus();
+        const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedImage(null); };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedImage]);
 
     // 6. Define the 'ImagesSkeleton' component to render a loading skeleton
     const ImagesSkeleton = () => (
@@ -90,10 +99,20 @@ const ImagesComponent: React.FC<ImagesComponentProps> = ({ images }) => {
             {selectedImage && (
                 // 13. Render a modal with the selected image if 'selectedImage' is not null
                 <div
+                    role="dialog"
+                    aria-modal="true"
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
                     onClick={handleCloseModal}
                 >
-                    <div className="max-w-5xl max-h-full">
+                    <div className="relative max-w-5xl max-h-full">
+                        <button
+                            ref={closeButtonRef}
+                            aria-label="Close image"
+                            className="absolute -top-10 right-0 text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-white"
+                            onClick={() => setSelectedImage(null)}
+                        >
+                            ✕
+                        </button>
                         <img src={selectedImage} alt="Full size" className="max-w-full max-h-full" />
                     </div>
                 </div>

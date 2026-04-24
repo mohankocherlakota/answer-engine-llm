@@ -45,6 +45,13 @@ const VideosComponent: React.FC<VideosComponentProps> = ({ videos }) => {
         setIsFullScreen(false);
     };
 
+    useEffect(() => {
+        if (!selectedVideo) return;
+        const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') handleCloseModal(); };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedVideo]);
+
     // 10. Define the 'toggleFullScreen' function to toggle the full-screen mode
     const toggleFullScreen = () => {
         setIsFullScreen(!isFullScreen);

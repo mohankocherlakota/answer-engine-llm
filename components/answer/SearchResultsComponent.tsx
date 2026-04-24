@@ -1,51 +1,48 @@
-// 1. Import the 'useState' and 'useEffect' hooks from React
 import { useState, useEffect } from 'react';
 
-// 2. Define the 'SearchResult' interface with properties for 'favicon', 'link', and 'title'
 export interface SearchResult {
     favicon: string;
     link: string;
     title: string;
+    snippet?: string;
 }
 
-// 3. Define the 'SearchResultsComponentProps' interface with a 'searchResults' property of type 'SearchResult[]'
 export interface SearchResultsComponentProps {
     searchResults: SearchResult[];
 }
 
-// 4. Define the 'SearchResultsComponent' functional component that takes 'searchResults' as a prop
+const GlobeIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+    </svg>
+);
+
 const SearchResultsComponent = ({ searchResults }: { searchResults: SearchResult[] }) => {
-    // 5. Use the 'useState' hook to manage the 'isExpanded' and 'loadedFavicons' state
     const [isExpanded, setIsExpanded] = useState(false);
     const [loadedFavicons, setLoadedFavicons] = useState<boolean[]>([]);
+    const [faviconErrors, setFaviconErrors] = useState<boolean[]>([]);
 
-    // 6. Use the 'useEffect' hook to initialize the 'loadedFavicons' state based on the 'searchResults' length
     useEffect(() => {
         setLoadedFavicons(Array(searchResults.length).fill(false));
+        setFaviconErrors(Array(searchResults.length).fill(false));
     }, [searchResults]);
 
-    // 7. Define the 'toggleExpansion' function to toggle the 'isExpanded' state
     const toggleExpansion = () => setIsExpanded(!isExpanded);
-
-    // 8. Define the 'visibleResults' variable to hold the search results to be displayed based on the 'isExpanded' state
     const visibleResults = isExpanded ? searchResults : searchResults.slice(0, 3);
 
-    // 9. Define the 'handleFaviconLoad' function to update the 'loadedFavicons' state when a favicon is loaded
     const handleFaviconLoad = (index: number) => {
-        setLoadedFavicons((prevLoadedFavicons) => {
-            const updatedLoadedFavicons = [...prevLoadedFavicons];
-            updatedLoadedFavicons[index] = true;
-            return updatedLoadedFavicons;
-        });
+        setLoadedFavicons(prev => { const u = [...prev]; u[index] = true; return u; });
+    };
+    const handleFaviconError = (index: number) => {
+        setFaviconErrors(prev => { const u = [...prev]; u[index] = true; return u; });
     };
 
-    // 10. Define the 'SearchResultsSkeleton' component to render a loading skeleton
     const SearchResultsSkeleton = () => (
         <>
-            {Array.from({ length: isExpanded ? searchResults.length : 3 }).map((_, index) => (
+            {Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="p-2 w-full sm:w-1/2 md:w-1/4">
                     <div className="flex items-center space-x-2 dark:bg-slate-700 bg-gray-100 p-3 rounded-lg h-full">
-                        <div className="w-5 h-5 dark:bg-slate-600 bg-gray-400 rounded animate-pulse"></div>
+                        <div className="w-5 h-5 dark:bg-slate-600 bg-gray-400 rounded animate-pulse flex-shrink-0"></div>
                         <div className="w-full h-4 dark:bg-slate-600 bg-gray-400 rounded animate-pulse"></div>
                     </div>
                 </div>
@@ -53,7 +50,6 @@ const SearchResultsComponent = ({ searchResults }: { searchResults: SearchResult
         </>
     );
 
-    // 11. Render the 'SearchResultsComponent'
     return (
         <div className="dark:bg-slate-800 bg-white shadow-lg rounded-lg p-4 mt-4">
             <div className="flex items-center">
@@ -62,39 +58,52 @@ const SearchResultsComponent = ({ searchResults }: { searchResults: SearchResult
             </div>
             <div className="flex flex-wrap my-2">
                 {searchResults.length === 0 ? (
-                    // 12. Render the 'SearchResultsSkeleton' if there are no search results
                     <SearchResultsSkeleton />
                 ) : (
-                    // 13. Render the search results with favicon, title, and link
                     visibleResults.map((result, index) => (
                         <div key={index} className="p-2 w-full sm:w-1/2 md:w-1/4">
-                            <div className="flex items-center space-x-2 dark:bg-slate-700 bg-gray-100 p-3 rounded-lg h-full">
-                                {!loadedFavicons[index] && (
-                                    <div className="w-5 h-5 dark:bg-slate-600 bg-gray-400 rounded animate-pulse"></div>
-                                )}
-                                <img
-                                    src={result.favicon}
-                                    alt="favicon"
-                                    className={`w-5 h-5 ${loadedFavicons[index] ? 'block' : 'hidden'}`}
-                                    onLoad={() => handleFaviconLoad(index)}
-                                />
-                                <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold truncate dark:text-gray-200 dark:hover:text-white text-gray-700 hover:text-black">
-                                    {result.title}
-                                </a>
+                            <div className="flex items-start space-x-2 dark:bg-slate-700 bg-gray-100 p-3 rounded-lg h-full">
+                                <div className="flex-shrink-0 mt-0.5">
+                                    {faviconErrors[index] ? (
+                                        <GlobeIcon />
+                                    ) : (
+                                        <>
+                                            {!loadedFavicons[index] && (
+                                                <div className="w-5 h-5 dark:bg-slate-600 bg-gray-400 rounded animate-pulse"></div>
+                                            )}
+                                            <img
+                                                src={result.favicon}
+                                                alt="favicon"
+                                                className={`w-5 h-5 ${loadedFavicons[index] ? 'block' : 'hidden'}`}
+                                                onLoad={() => handleFaviconLoad(index)}
+                                                onError={() => handleFaviconError(index)}
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="min-w-0">
+                                    <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold truncate block dark:text-gray-200 dark:hover:text-white text-gray-700 hover:text-black">
+                                        {result.title}
+                                    </a>
+                                    {result.snippet && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{result.snippet}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))
                 )}
-                {/* 14. Render a button to toggle the expansion of search results */}
                 <div className="w-full sm:w-full md:w-1/4 p-2">
                     <div
                         onClick={toggleExpansion}
-                        className="flex items-center space-x-2 dark:bg-slate-700 bg-gray-100 p-3 rounded-lg cursor-pointer h-12 justify-center"
+                        className="flex items-center space-x-2 dark:bg-slate-700 bg-gray-100 p-3 rounded-lg cursor-pointer h-12 justify-center transition-all duration-200 hover:bg-gray-200 dark:hover:bg-slate-600"
                     >
                         {!isExpanded ? (
                             <>
                                 {searchResults.slice(0, 3).map((result, index) => (
-                                    <img key={index} src={result.favicon} alt="favicon" className="w-4 h-4" />
+                                    faviconErrors[index]
+                                        ? <GlobeIcon key={index} />
+                                        : <img key={index} src={result.favicon} alt="favicon" className="w-4 h-4" onError={() => handleFaviconError(index)} />
                                 ))}
                                 <span className="text-sm font-semibold dark:text-gray-200 text-gray-700">View more</span>
                             </>
@@ -105,7 +114,7 @@ const SearchResultsComponent = ({ searchResults }: { searchResults: SearchResult
                 </div>
             </div>
         </div>
-    )
+    );
 };
 
 export default SearchResultsComponent;
