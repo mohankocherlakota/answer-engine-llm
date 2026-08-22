@@ -9,13 +9,18 @@ export const config = {
     useOllamaEmbeddings: false,
     inferenceModel: 'mixtral-8x7b-32768', // Groq: 'mixtral-8x7b-32768', 'gemma-7b-it' // OpenAI: 'gpt-3.5-turbo', 'gpt-4' // Ollama 'mistral', 'llama2' etc
     inferenceAPIKey: process.env.GROQ_API_KEY, // Groq: process.env.GROQ_API_KEY // OpenAI: process.env.OPENAI_API_KEY // Ollama: 'ollama' is the default
-    embeddingsModel: 'gpt-3.5-turbo', // Ollama: 'llama2', 'nomic-embed-text' // OpenAI 'text-embedding-3-small', 'text-embedding-3-large'
+    embeddingsModel: 'text-embedding-3-small', // Ollama: 'llama2', 'nomic-embed-text' // OpenAI 'text-embedding-3-small', 'text-embedding-3-large'
     textChunkSize: 1000, // Recommended to decrease for Ollama
     textChunkOverlap: 400, // Recommended to decrease for Ollama
-    numberOfSimilarityResults: 4, // Numbher of similarity results to return per page
+    numberOfSimilarityResults: 4, // Number of similarity results to return per page
     numberOfPagesToScan: 10, // Recommended to decrease for Ollama
-    nonOllamaBaseURL: 'https://api.groq.com/openai/v1', //Groq: https://api.groq.com/openai/v1 // OpenAI: https://api.openai.com/v1 
+    nonOllamaBaseURL: 'https://api.groq.com/openai/v1', //Groq: https://api.groq.com/openai/v1 // OpenAI: https://api.openai.com/v1
 
     // Set LAN GPU server, example: http://192.168.1.100:11434/v1
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+
+    // Feature flags
+    useFunctionCalling: true,    // Enable @mention tool invocation (Spotify, Shopping, Maps, Stocks)
+    useRateLimiting: false,      // Requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+    useSemanticCache: false,     // Requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 };
